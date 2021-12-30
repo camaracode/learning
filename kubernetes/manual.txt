@@ -138,6 +138,162 @@ OBS: normalmente não é muito utilizado
 Gera um ip para acessar externamente
 
 
+##### Objetos de configuração #####
+- variáveis de ambiente
+Ex: 
+...
+ spec:
+      containers:
+        - name: webapp
+          image: robertocamara/webapp-kubernetes:v3
+          env:
+            - name: MYNAME
+              value: "Roberto Camara"
+
+- utilizando variaveis de ambiente com ConfigMap
+Ex arquivo configMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webapp-env
+data:
+  MYNAME: Roberto Alves Camara 
+
+Ex: 
+...
+   spec:
+      containers:
+        - name: webapp
+          image: robertocamara/webapp-kubernetes:v3
+          envFrom: # dessa forma o kubernetes entende que tem que carregar todas as variaveis
+            - configMapRef:
+                name: webapp-env
+          # outra forma
+          # env:
+          #   - name: MYNAME
+          #     valueFrom:                
+          #       configMapKeyRef:
+          #         name: webapp-env
+          #         key: MYNAME              
+
+- injetando ConfigMap no container (evitar recriar imagens)
+EX:
+...
+    spec:
+      containers:
+        - name: webapp
+          image: robertocamara/webapp-kubernetes:v4
+          envFrom: # dessa forma o kubernetes entende que tem que carregar todas as variaveis
+            - configMapRef:
+                name: webapp-env
+          volumeMounts:
+            - mountPath: "/app/staticfiles"
+              name: config      
+      volumes:
+        - name: config 
+          configMap:
+            name: configmap-skills 
+            items:
+              - key: skills
+                path: "skills.txt"
+
+
+- acessar pod 
+$ kubectl exec -it NOME_POD -- bash
+
+- logs pod 
+$ kubectl logs NOME_POD
+
+## secrets e variaveis de ambientes ##
+IMPORTANTE:
+Por padrão, os secrets trabalham com base64.
+- Para transformar em base64 no linux.
+$ echo "MINHA_STRING" | base64
+
+OBS: ver arquivo secret
+
+### health check ###
+- utilizando o livenessProbe para checar a saúde da aplicação
+* possui 3 tipos: http, command dentro do container, tcp
+
+- deploy com watch nos pods
+$ kubectl apply -f k8s/deployment.yaml && watch -n1 kubectl get pods
+
+- utilizando readiness (verifica quando a aplicação tá pronta pra receber tráfego)
+
+- utilizando o startupProbe
+só habilita o readiness e o liveness, após esse objeto garantir que a aplicação tá no ar.
+# caso esteja sendo utilizado não tem necessidade do initialDelaySeconds
+
+### Resources e HPA (horizontal pod autoscale) ###
+- instalando metrics-server
+https://github.com/kubernetes-sigs/metrics-server
+
+Para funcionar corretamente no kind, será necessário um workaround.
+- baixar o arquivo de configuração 
+$ wget https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+- para o metrics-server trabalhar de forma insegura
+https://github.com/kubernetes-sigs/metrics-server/issues/525
+
+* add nos argumentos do container no Deployment 
+- --kubelet-insecure-tls
+
+- executar o metrics-server 
+$ kubectl apply -f metrics-server.yaml
+
+- para verificar se está funcionando
+$ kubectl get apiservices
+* localizar "v1beta1.metrics.k8s.io", se available True.
+
+- configurando os recurso dos containers
+EX:
+...
+spec:
+    containers:
+    - name: webapp
+        image: robertocamara/webapp-kubernetes:v5.2
+        resources:
+        requests: # configura o mínimo exigido pra esse container(pod) funcionar
+            cpu: 100m # 100 milicores
+            memory: 20Mi # 20 megas
+        limits: # até onde pode utilizar de recurso
+            cpu: 500m
+            memory: 25Mi
+
+- verificar o consumo de recursos
+$ kubectl top pod NOME_POD
+$ watch -n1 kubectl top pod NOME_POD
+
+- utilizar HPA (horizontal pod autoscale)
+Ex: 
+...
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: webapp-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: webapp
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 30
+
+- para teste de stress
+$ kubectl run -it fortio --rm --image=fortio/fortio -- load -qps 800 -t 360s -c 70 "http://webapp-service/WeatherForecast/generate-guid"
+$ kubectl run -it fortio --rm --image=fortio/fortio -- load -qps 800 -t 120s -c 70 "http://webapp-service/WeatherForecast/health"
+$ kubectl run -it fortio --rm --image=fortio/fortio -- load -qps 2000 -t 360s -c 70 "http://webapp-service/WeatherForecast"  
+
+- observar métricas
+$ watch -n1 kubectl get hpa 
+$ watch -n1 kubectl get pods 
+
+
+
+
+
 
 
 

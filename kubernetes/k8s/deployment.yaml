@@ -8,7 +8,7 @@ spec:
   selector:
     matchLabels:
       app: webapp
-  replicas: 10
+  replicas: 1
   template:
     metadata:
       labels:
@@ -16,4 +16,56 @@ spec:
     spec:
       containers:
         - name: webapp
-          image: robertocamara/webapp-kubernetes:v2
+          image: robertocamara/webapp-kubernetes:v5.4
+          resources:
+            requests: # configura o mínimo exigido pra esse container(pod) funcionar
+              cpu: 50m # 100 milicores
+              memory: 20Mi # 20 megas
+            limits: # até onde pode utilizar de recurso
+              cpu: 100m
+              memory: 25Mi
+
+          startupProbe: # caso esteja utilizando não tem necessidade initialDelaySeconds
+            httpGet:
+              path: /WeatherForecast/health
+              port: 80 # porta do container
+            periodSeconds: 3
+            failureThreshold: 30 # qtde de tentativas para de fato considerar um problema             
+          
+          readinessProbe:
+            httpGet:
+              path: /WeatherForecast/health
+              port: 80 # porta do container
+            periodSeconds: 3
+            failureThreshold: 1 # qtde de tentativas para de fato considerar um problema 
+            timeoutSeconds: 1
+            successThreshold: 1
+            #initialDelaySeconds: 10 # aguardar x segundos para iniciar a verificação
+          
+          livenessProbe: 
+            httpGet:
+              path: /WeatherForecast/health
+              port: 80 # porta do container
+            periodSeconds: 5
+            failureThreshold: 3 # qtde de tentativas para de fato considerar um problema 
+            timeoutSeconds: 1
+            successThreshold: 1
+            #initialDelaySeconds: 15 # aguardar x segundos para iniciar a verificação
+
+          envFrom: # dessa forma o kubernetes entende que tem que carregar todas as variaveis
+            - configMapRef:
+                name: webapp-env
+            - secretRef: # para utilizar o arquivo de secret
+                name: webapp-secret
+          volumeMounts:
+            - mountPath: "/app/staticfiles"
+              name: config      
+      volumes:
+        - name: config 
+          configMap:
+            name: configmap-skills 
+            items:
+              - key: skills
+                path: "skills.txt"
+
+                 
