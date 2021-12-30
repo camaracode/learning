@@ -1,0 +1,19 @@
+apiVersion: apps/v1 
+kind: ReplicaSet
+metadata:
+  name: webapp
+  labels:
+    app: webapp
+spec:  
+  selector:
+    matchLabels:
+      app: webapp
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+        - name: webapp
+          image: robertocamara/webapp-kubernetes

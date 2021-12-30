@@ -1,0 +1,197 @@
+#### kubernetes ####
+
+# instalação do kind
+- instala kubernetes utilizando containers docker, dessa forma não temos a obrigatoriedade de criação de VMs 
+https://kind.sigs.k8s.io/
+
+- necessário instalar kubectl
+https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management
+
+- instalando kind (linux)
+$ curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+$ chmod +x ./kind
+$ sudo mv ./kind /usr/local/bin/kind
+
+OBS: 
+$ env -> checa nossas variaveis de ambiente
+Ótimo post para explicar sobre $PATH:
+https://linuxize.com/post/how-to-add-directory-to-path-in-linux/
+
+# principais comandos do kind
+- gerando um cluster com apenas um nó 
+IMPORTANTE: especificar versão da imagem node
+$ kind create cluster --image kindest/node:v1.23.0
+
+- local do arquivo de configuração
+$ cat ~/.kube/config
+
+- conectando o kubectl ao cluster 
+$ kubectl cluster-info --context kind-kind
+OBS: kind-kind é o nome do cluster que poder configurado com o parametro --name na criação do cluster
+
+- para identificar se tá funcionando
+$ kubectl get nodes
+
+- obter todos os clusters
+$ kind get clusters
+
+- deletar clusters
+$ kind delete clusters NOME_CLUSTER
+
+**** gerando um cluster com multi nós
+- criar um arquivo yaml para configuração do cluster
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 30000
+    hostPort: 30000
+    protocol: TCP
+- role: worker    
+- role: worker
+- role: worker
+
+- gerando cluster passando as configurações e um nome
+$ kind create cluster --config=k8s/cluster-config.yaml --name=robertocamara --image kindest/node:v1.23.0
+
+- obter nomes dos clusters pelo kubectl
+$ kubectl config get-clusters
+
+- mudar contexto de uso do cluster
+$ kubectl config use-context NOME_CLUSTER (kubectl config get-clusters)
+
+- instalar extension do [kubernetes] para facilitar o gerenciamento dos clusters
+
+## criando Pods ##
+- criar arquivo yaml
+- executar arquivo yaml
+$ kubectl apply -f pod.yaml
+
+- testar se o pod tá funcionando (redirecionamento de porta)
+$ kubectl port-forward pod/webapp 8080:80
+
+- apagar pod
+$ kubectl delete pod webapp
+
+## criando replicaset (gerencia os pods)
+$ kubectl get replicasets
+
+- deletar ReplicaSet
+$ kubectl delete replicaset NOME_REPLICASET
+
+- problemas com replicasets
+Caso uma nova versão da aplicação seja gerada, mesmo configurando o novo replicaset, os pods não são atualizados, 
+apenas se deletar e recriar o pod.
+
+O kubernetes tem um objeto pra resolver esse problema, que é o Deployment
+Hierarquia: 
+    Deployment -> ReplicaSet -> Pod
+
+Ao fazer um novo Deployment, o kubernetes recria o ReplicaSet e consequentemente os Pods.
+Para realizar esse operação, basta alterar o kind do arquivo yaml para "Deployment".
+
+- obter deployments
+$ kubectl get deployments
+
+### Rollout e Revisões ###
+- obter lista do histórico do kubernetes
+$ kubectl rollout history deployment NOME_DEPLOYMENT
+
+- como voltar pra versão anterior do deployment 
+$ kubectl rollout undo deployment NOME_DEPLOYMENT 
+
+- voltar para uma revisão específica
+$ kubectl rollout undo deployment NOME_DEPLOYMENT --to-revision=2
+
+- detalhamento do deployment em execução
+$ kubectl describe deployment NOME_DEPLOYMENT
+
+#### Services ####
+- obter services 
+$ kubectl get services ou kubectl get svc 
+
+- criando um redirecionamento para acesso externo
+$ kubectl port-forward service/webapp-service 8090:80
+
+IMPORTANTE: 
+Caso a porta do container não esteja na 80, precisamos utilizar o "targetPort", 
+para que o service saiba redirecionar para a porta do container.
+Resumindo: 
+    port: é a porta do service
+    targetPort: é a porta do container
+
+
+### Proxy para acessar a API do kubernetes ### 
+- criando um proxy 
+$ kubectl proxy --port=8080
+
+### Service Type - ClusterIP ###
+Gera IP interno para o service 
+
+### Service Type - NodePort ###
+Consegue expor o service através de uma porta 
+OBS: normalmente não é muito utilizado 
+
+### Service Type - LoadBalancer ###
+Gera um ip para acessar externamente
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

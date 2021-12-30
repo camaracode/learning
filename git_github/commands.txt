@@ -1,0 +1,49 @@
+### Assinaturas de commits ###
+# instalar gpg -> sudo apt-get install gpg
+
+# consultar se existe chave criada
+$ gpg --list-secret-key --keyid-form LONG
+
+# criar chaves
+$ gpg --full-generate-key
+ -> Real Name: Colocar seu nome do github: Roberto Camara
+ -> email: email do github: robertocamara@outlook.com.br
+ -> local onde fica armazenada chave: '/home/roberto/.gnupg/openpgp-revocs.d/482D30197E00F66072E8F9C2D23FD1EC84617943.rev'
+ -> consultar chave: gpg --list-secret-key --keyid-form LONG
+ -> pegar identificador: sec   rsa4096/AQUIFICASEUID 2021-12-27 [SC] [expires: 2022-12-27]
+ -> exportar chave baseado no id para gerar chave publica
+    * $ gpg --armor --export AQUIVAISEUID
+ -> copiar chave publica e configurar GPG keys no github 
+ -> para dizer ao github qual será a chave padrão a ser utilizada nos commits
+    * $ git config --global user.signingkey AQUIVAISEUID
+ -> para funcionar corretamente, devemos trabalhar com uma variável específica
+    * export GPG_TTY=$(tty)
+ -> para que não seja necessário informar esse passo todas as vezes, devemos configurar o bash com essa variável
+    * abrir arquivo de profile: vim ~/.profile
+    * informar: export GPG_TTY=$(tty)
+ -> escolher se quer assinar por padrão os commits
+    - assinar apenas commits/tags do repositório atual
+        * $ git config commit.gpgsign true
+        OBS: caso opte por não assinar os commits globalmente e queira utilizar assinatura por commits, 
+             utilizar o parâmetro -S.
+        EX: git commit -S -m "meu commit"
+    - assinar commits global    
+        * $ git config --global commit.gpgsign true
+    - assinar tags por padrão
+        * $ git config tag.gpgsign true
+ -> para verificar se o commit foi assinado corretamente
+    * $ git log --show-signature -1
+ -> configuração para não pedir senha todas as vezes
+    * $ vim ~/.gnupg/gpg.conf
+    * $ gpgconf --launch gpg-agent
+
+### protegendo branch main ###
+# criando e subindo nova branch
+-> $ git checkout -b develop    
+-> $ git push origin develop
+
+OBS: Branch protection rules -> somente para GitHub Pro
+   
+
+
+

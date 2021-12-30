@@ -1,0 +1,31 @@
+# execute docker run with volume
+docker run -d --name nginx -p 8080:80 -v "$(pwd)":/usr/share/nginx/html nginx
+
+
+###### ENTRYPOINT ###### 
+# CMD é um comando variável que entra como um parâmetro do ENTRYPOINT quando usados em conjunto
+# ENTRYPOINT [ "echo", "Hello" ]
+
+###### CMD ######
+# processo que mantém o container em execução
+# pode ser substituido na criação do container 
+# Ex: docker run robertocamara/nginx-vim echo "Roberto Camara"
+# CMD [ "echo", "Hello World" ]
+
+###### NETWORK ######
+
+###### Criando uma aplicação node.js sem o node #######
+-- criando um container e mapeando o volume para uma pasta específica do host.. nesse caso, a pasta node
+$ docker run --rm -it -v $(pwd)/:/usr/src/app -p 3000:3000 node:15 bash
+
+-- navegar para a pasta /usr/src/app
+-- se criar um arquivo, este deverá aparecer na minha pasta mapeada. ex: touch readme
+-- criar um projeto em node dentro do container
+$ npm init
+-- instalar dependencia do express
+$ npm install express --save
+-- criar um index.js
+
+
+
+
