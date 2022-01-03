@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: webapp
-          image: robertocamara/webapp-kubernetes:v5.4
+          image: robertocamara/webapp-kubernetes:v5.5
           resources:
             requests: # configura o mínimo exigido pra esse container(pod) funcionar
               cpu: 50m # 100 milicores
@@ -59,8 +59,14 @@ spec:
                 name: webapp-secret
           volumeMounts:
             - mountPath: "/app/staticfiles"
-              name: config      
+              name: config   
+            - mountPath: "app/pvc"
+              name: webapp-volume # nome que foi definido na criação do volume
+
       volumes:
+        - name: webapp-volume # pode ser qualquer nome
+          persistentVolumeClaim:
+            claimName: webapp-pvc # aqui deve ser exatamente o nome que foi definido no arquivo de configuração do pvc
         - name: config 
           configMap:
             name: configmap-skills 

@@ -290,6 +290,243 @@ $ kubectl run -it fortio --rm --image=fortio/fortio -- load -qps 2000 -t 360s -c
 $ watch -n1 kubectl get hpa 
 $ watch -n1 kubectl get pods 
 
+### StatefulSets e Volumes Persistentes ###
+- criando volumes persistentes e montado
+$ kubectl get storageclass (diferentes por provider de nuvem)
+
+- get configurações do nosso kind 
+$ kubectl config get-contexts
+
+- criando um persistent volume claim (pvc)
+ex:
+...
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webapp-pvc
+spec:
+  resources:
+    requests:
+      storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+
+- consultando os persistents volumes claims (pvc)
+$ kubectl get persistentvolumeclaim (ou apenas pvc)
+
+-  montando o bind no deployment
+Ex: 
+...
+      volumeMounts:
+            - mountPath: "/app/staticfiles"
+              name: config   
+            - mountPath: "app/pvc"
+              name: webapp-volume # nome que foi definido na criação do volume
+
+      volumes:
+        - name: webapp-volume # pode ser qualquer nome
+          persistentVolumeClaim:
+            claimName: webapp-pvc # aqui deve ser exatamente o nome que foi definido no arquivo de configuração do pvc
+
+* após a configuração do bind, consultar novamente o status do pvc
+- $ kubectl get pvc
+
+* para testar o pvc
+- acessar um pod ($ kubectl exec -it NOME_POD -- bash)
+- criar um arquivo dentro da pasta criada para o volume "/pvc"
+- deletar o pod
+- quando for recriado, o arquivo deve estar dentro da pasta "/pvc"
+
+# criando StatefulSets
+Ex:
+...
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  serviceName: mysql-h
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: root        
+            
+- consultar statefulset 
+$ kubectl get statefulset
+
+- criando headless service
+Ex: 
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-h # este nome deve ser exatamente o nome que foi definido na tag "serviceName" do arquivo de configuração do statefulset
+spec:
+  selector: # utilizado para filtrar e selecionar os os apps definidos no mathLabels
+    app: mysql 
+  ports:
+    - port: 3306
+  clusterIP: None # service entende que não vai trabalhar com ip e sim com resolução de nome (DNS)
+
+* para testar
+- acessar outro pod e ping para outro service, podendo utilizar a resolução de nomes para direcionar a requisição
+ex: $ ping mysql-0.mysql-h
+    $ ping mysql-1.mysql-h
+
+- criando volumes dinamicamente com statefulset
+Ex:
+...
+    spec:
+      containers:
+      - name: mysql
+        image: mysql
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: root
+        volumeMounts:
+          - mountPath: /var/lib/mysql
+            name: mysql-volume
+
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-volume
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+
+OBS: analisar arquivo statefulset.yaml
+
+#### ingress ####
+Basicamente seria um ponto único de entrada para o kubernetes, faz o roteamento para os services lembrando muito uma api gateway
+
+OBS: tem que testar em algum provider
+
+### cert-manager ####
+https://cert-manager.io/docs/
+
+- criando um namespace para o cert-manager
+$ kubectl create namespace cert-manager
+
+- https://cert-manager.io/next-docs/installation/kubectl/
+$ kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.7.0-alpha.0/cert-manager.yaml
+
+- obter pods pelo namespace do cert-manager 
+OBS: -n (namespace)
+$ kubectl get po -n cert-manager
+
+- criar cluster issue 
+OBS: as features do ingress e cert-manager dependem de um provider de nuvem 
+
+Ex:
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata: 
+  name: letsencrypt
+  namespace: cert-manager
+spec:
+  acme: 
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: robertocamara@outlook.com.br
+    privateKeySecretRef:
+      name: letsencrypt-tls
+    solvers: 
+    - http01:
+        ingress:
+          class: nginx
+
+- consultar ClusterIssuer          
+$ kubectl get ClusterIssuer
+
+#### namespaces ####
+OBS: consultar arquivo deployment "k8s/namespaces/deployment.yaml"
+
+
+- criar namespace 
+$ kubectl create namespace dev
+
+- aplicando deploy definindo namespace
+$ kubectl apply -f deployment.yaml -n=dev
+
+- consultando deplou namespace específico
+$ kubectl get deployments -n=dev
+
+- visualizar configurações do cluster
+$ kubectl config view
+
+- context atual 
+$ kubectl config current-context
+
+- criando contextos por namespace
+$ kubectl config set-context NOME_CONTEXT --namespace=NOME_NAMESPACE --cluster=NOME_CLUSTER --user=USUARIO_CLUSTER
+
+- defindo um contexto 
+$ kubectl config use-context kind-robertocamara (my default)
+$ kubectl config use-context dev 
+$ kubectl config current-context
+
+ex: kubectl get pods -n=dev 
+
+#### Criando service account e roles ####
+- obter service accounts
+$ kubectl get serviceaccounts
+
+- checar resources 
+$ kubectl api-resources
+
+OBS: essa parte de segurança (ServiceAccount, Role and RoleBinding) tem que ser revista
+
+# código fonte das aulas
+https://github.com/codeedu/fc2-k8s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
