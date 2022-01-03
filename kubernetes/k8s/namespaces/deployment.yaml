@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+spec:
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      #serviceAccount: server # definindo ServiceAccount customizada
+      containers:
+      - name: server
+        image: robertocamara/webapp-kubernetes:v5.5
+        resources:
+            requests: 
+              cpu: 50m 
+              memory: 20Mi 
+            limits: 
+              cpu: 100m
+              memory: 25Mi
+        ports:
+        - containerPort: 80
