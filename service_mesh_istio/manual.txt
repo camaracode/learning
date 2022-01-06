@@ -1,0 +1,213 @@
+###### Service Mesh com Istio #####
+
+OBS: utilizando k3d por simplificar o bind de portas e o uso do istio 
+
+- instalação
+https://k3d.io/v5.2.2/#installation
+
+curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+
+- criando cluster
+$ k3d cluster create -p "8000:30000@loadbalancer" --agents 2
+
+* context default: k3d-k3s-default
+
+- obtendo os nodes criados
+$ kubectl get nodes
+$ k3d node list
+
+- instalando o istioctl  
+https://istio.io/latest/docs/setup/getting-started/
+
+- download script istio 
+$ curl -L https://istio.io/downloadIstio | sh -
+
+* a partir do diretório raiz do seu usuário, mover bin do istio para o diretório "/usr/local/bin" 
+$ sudo mv istio-1.12.1/bin/istioctl /usr/local/bin
+
+- instalação do istio no cluster 
+* a instalação é baseada em perfis (https://istio.io/latest/docs/setup/additional-setup/config-profiles/)
+
+* para instalação padrão 
+$ istioctl install -y
+
+* para instalar com perfil diferente do default
+$ istioctl install --set profile=demo -y
+
+* verificar instalação
+$ kubectl get ns (criou o namespace "istio-system")
+
+* checando pods do k3d do namespace "istio-system"
+$ kubectl get pods -n istio-system
+
+* checando services do namespace "istio-system"
+$ kubectl get services -n istio-system
+
+- injetando sidecar proxy 
+* o istio utiliza labels para interpretar que precisa subir um sidecarproxy junto com o container
+$ kubectl label namespace default istio-injection=enabled
+
+* para obter detalhes da criação do sidecarproxy 
+$ kubectl describe pod NOME_POD 
+
+- configurando addons
+* github dos arquivos de manifestos
+https://github.com/istio/istio/tree/release-1.12/samples/addons
+
+* uma das formas para instalar seria clonar o repositório e $ kubectl apply -f DIRETORIO_PROJETO
+* outra forma é pegar o "raw" do arquivos e executar
+-- grafana 
+$ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.12/samples/addons/grafana.yaml
+
+-- jaeger 
+$ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.12/samples/addons/jaeger.yaml
+
+-- kiali
+$ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.12/samples/addons/kiali.yaml
+
+-- prometheus
+$ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.12/samples/addons/prometheus.yaml
+
+- acessando o dashboard do kiali
+$ istioctl dashboard kiali
+
+#### detalhes nos arquivos na pasta traffic ####
+
+- criando versões de deployments/deploy canario
+* detalhes no arquivo "sidecar-proxy/deployments.yaml"
+
+* para testar a distribuição de tráfego
+$ while true;do curl http://localhost:8000/Istio/version; echo; sleep 0.5; done;
+
+- deploy canário com istio e kiali 
+* configurando diretamente pelo kiali
+1- botão direito no service e detail.
+2- Actions: Create Traffic Shifting
+
+* testando com fortio 
+$ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.12/samples/httpbin/sample-client/fortio-deploy.yaml
+
+* export no fortio pra facilitar o uso
+$ export FORTIO_POD=$(kubectl get pods -l app=fortio -o 'jsonpath={.items[0].metadata.name}')
+$ echo $FORTIO_POD => trás o nome do pod com o fortio 
+
+* comando para executar o pod fortio
+$ kubectl exec "$FORTIO_POD" -c fortio -- fortio load -c 2 -qps 0 -t 200s -loglevel Warning http://webapp-istio-service:8000/Istio/version
+    
+
+- tipos de load balancer por subsets
+* detalhes no arquivo destinationrule.yaml
+
+- stick session e consistent hash
+* garantir que dada uma primeira requisição do usuário, todas as demais sigam o mesmo tráfego (consistent hash)
+* para testar
+1- acessar um pod e executar um curl passando o tipo de policy traffic configurado para o consistent hash 
+$ curl --header "x-user:roberto" http://webapp-istio-service:8000/istio/version
+
+### Fault injection (simular falhas) ####
+* detalhes no arquivo fault/faul-injection.yaml
+OBS: fortio só funciona com delay no fault de 2s 
+
+#### Circuit Breaker ####
+* detalhes no arquivo circuit-breaker/deployment.yaml e circuit-breaker/circuit-breaker-dr.yaml 
+
+* comando para executar o pod fortio (-n => quantidade de tentativas)
+$ kubectl exec "$FORTIO_POD" -c fortio -- fortio load -c 2 -qps 0 -n 200 -loglevel Warning http://circuit-breaker-service/Istio/circuit-breaker
+
+* comando para executar o pod fortio (-t => tempo de execução)
+kubectl exec "$FORTIO_POD" -c fortio -- fortio load -c 2 -qps 0 -t 200s -loglevel Warning http://circuit-breaker-service/Istio/circuit-breaker
+
+#### ingress gateway #####
+- obtendo os services no namespace do istio 
+$ kubectl get svc -n istio-system
+
+* Por padrão, o istio define uma porta (acima de 30000), para o "istio-ingressgateway",
+  mapear a porta 80 do host local.
+  Como estamos local, a ideia aqui é alterar a porta que o istio disponibilizou para o "istio-ingressgateway",
+  e utilizar a porta 30000 que definimos quando criamos o cluster.
+
+- comando para editar o service "istio-ingressgateway"
+$ kubectl edit svc istio-ingressgateway -n istio-system 
+
+* maiores detalhes no arquivo gateway/gateway.yaml
+
+### trabalhando com prefixos ###
+OBS: melhorar a aplicação pra testar essa forma de roteamento
+
+### configurando com domínio ###
+OBS: a configuração de domínio no hosts do windows, só funcionaram com .localhost 
+
+* detalhes no arquivo gateway/gateway-domains.yaml 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

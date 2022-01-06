@@ -1,0 +1,51 @@
+# See more at https://istio.io/docs/reference/config/networking/gateway/
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: ingress-gateway-k3s
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: http2
+    hosts: # representa o domínio
+    - "*.localhost"
+
+--- 
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: webapp-istio-gateway-vs
+spec:
+  hosts: # são os services do kubernetes
+  - "a.localhost" # webapp-istio-gateway-service # utilizar * para compatibilizar com o host do gateway
+  gateways:
+  - ingress-gateway-k3s # associando virtual service ao gateway
+  http:    
+  - route:
+    - destination:
+        host: webapp-istio-gateway-service
+        subset: v1
+      weight: 50 # peso percentual   
+      
+---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: webapp-istio-gateway-vs-b
+spec:
+  hosts: # são os services do kubernetes  
+  - "b.localhost" # webapp-istio-gateway-service # utilizar * para compatibilizar com o host do gateway
+  gateways:
+  - ingress-gateway-k3s # associando virtual service ao gateway
+  http:    
+  - route:
+    - destination:
+        host: webapp-istio-gateway-service
+        subset: v2
+      weight: 50 # peso percentual

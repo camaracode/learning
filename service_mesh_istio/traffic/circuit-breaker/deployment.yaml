@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: circuit-breaker
+spec:
+  selector:
+    matchLabels:
+      app: circuit-breaker
+  template:
+    metadata:
+      labels:
+        app: circuit-breaker
+        version: "200"
+    spec:
+      containers:
+      - name: circuit-breaker
+        image: robertocamara/webapp-kubernetes-circuit-breaker:v1
+        resources:
+          limits:
+            memory: "25Mi"
+            cpu: "50m"
+        ports:
+        - containerPort: 80
+
+--- 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: circuit-breaker-error
+spec:
+  selector:
+    matchLabels:
+      app: circuit-breaker
+  template:
+    metadata:
+      labels:
+        app: circuit-breaker
+        version: "504"
+    spec:
+      containers:
+      - name: circuit-breaker
+        image: robertocamara/webapp-kubernetes-circuit-breaker:v1
+        resources:
+          limits:
+            memory: "25Mi"
+            cpu: "50m"
+        ports:
+        - containerPort: 80
+        env: 
+          - name: SIMULATE_ERROR
+            value: "True" 
+
+--- 
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: circuit-breaker-service
+spec:
+  type: ClusterIP
+  selector:
+    app: circuit-breaker # filtro para identificar os deployments
+  ports:
+  - port: 80
+    targetPort: 80 # porta dos containers
