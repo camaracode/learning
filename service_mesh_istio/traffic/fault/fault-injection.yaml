@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: webapp-istio-vs
+spec:
+  hosts: # são os services do kubernetes
+  - webapp-istio-service
+  http:
+  - fault:
+      delay:
+        percentage:
+          value: 100
+        fixedDelay: 5s
+    route:
+    - destination:
+        host: webapp-istio-service
+        subset: all
+--- 
+
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule # IMPORTANTE: posso ter um destinarionrule sem ter um virtualservice, caso não existe, o destinationrule segue o padrão do kubernetes
+metadata:
+  name: webapp-istio-dr
+spec:
+  host: webapp-istio-service # são os services do kubernetes
+  trafficPolicy:  
+    loadBalancer:
+      consistentHash:
+        httpHeaderName: "x-user"
+  subsets:
+  - name: all
+    labels:
+      app: webapp-istio # pegar todos os pods com esse nome

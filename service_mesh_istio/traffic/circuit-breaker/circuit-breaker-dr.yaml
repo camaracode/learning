@@ -1,0 +1,14 @@
+# See more at https://istio.io/docs/reference/config/networking/destination-rule/
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: circuit-breaker-destinationrule
+spec:
+  host: circuit-breaker-service
+  trafficPolicy:
+    outlierDetection:
+      #consecutive5xxErrors: 20 # para todos os erros na faixa de 5xx
+      consecutiveGatewayErrors: 5 # considera apenas os erros 502, 503 ou 504
+      interval: 20s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100
