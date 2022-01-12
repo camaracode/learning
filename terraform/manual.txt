@@ -5,6 +5,29 @@ $ curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
 $ sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
 $ sudo apt-get update && sudo apt-get install terraform
 
+- criando primeiro arquivo de configuração do terraform
+
+* provider local
+https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file
+
+EX:
+...
+# resource = bloco
+# local = provider
+# file = tipo do provider
+# exemplo = nome do recurdo
+resource "local_file" "exemplo" {  
+}
+
+* iniciando terraform
+$ terraform init
+
+* criar um plano
+$ terraform plan
+
+* executar o plano
+$ terraform apply
+
 
 
 
