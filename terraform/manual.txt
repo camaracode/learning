@@ -28,6 +28,151 @@ $ terraform plan
 * executar o plano
 $ terraform apply
 
+- variável
+OBS: assistir aula depois novamente
+
+- outputs
+OBS: assistir aula depois novamente
+
+- data sources
+OBS: assistir aula depois novamente
+
+
+########### Criando cluster kubernetes ###########
+https://github.com/codeedu/fc2-terraform
+
+- conceitos aws
+VPC -> Subnets
+    Subnets podem ser separados por zonas de disponibilidade
+    Route Table -> especifica os roteamentos das subnets 
+    Security Group -> firewall (ingress - egress)
+
+Somente após essas configurações que começamos a criar as máquinas
+
+- criar novo usuário na aws - admin
+* credenciais enviadas por email
+
+- instalando o aws cli
+$ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+$ unzip awscliv2.zip
+$ sudo ./aws/install
+
+obs: a symbolic link is created in /usr/local/bin
+
+- configurando aws cli
+$ aws configure
+
+- local do arquivo de configuração
+$ cat ~/.aws/config
+
+- criando vpc com terraform
+* ver arquivo "aws-cluster/providers.tf"
+
+$ terraform init 
+
+- criando vpc
+ex:
+resource "aws_vpc" "kube-vpc" {    
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "kube-vpc"
+  }
+}
+
+$ terraform plan 
+$ terraform apply
+
+- criando subnets
+Ex: 
+resource "aws_subnet" "kube-subnet-1" {
+  availability_zone = "us-east-1a"
+  vpc_id = aws_vpc.kube-vpc.id
+  cidr_block = "10.0.0.0/24"
+  tags = {
+    Name = "kube-subnet-1"
+  }  
+}
+
+* executar com auto aprovação
+$ terraform apply --auto-approve
+
+* refatorando a criação de subnets
+EX:
+resource "aws_subnet" "subnets" {
+  count = 2
+  availability_zone = data.aws_availability_zones.azs.names[count.index]
+  vpc_id = aws_vpc.kube-vpc.id
+  cidr_block = "10.0.${count.index}.0/24"
+  map_public_ip_on_launch = true # habilitando criação de ip publico para subnet
+  tags = {
+    Name = "${var.prefix}-subnet-${count.index + 1}"
+  }  
+}
+
+- criando gateway e route table
+Ex:
+resource "aws_internet_gateway" "kube-igw" {
+  vpc_id = aws_vpc.kube-vpc.id
+  tags = {
+      Name = "${var.prefix}-igw"
+  }
+}
+
+resource "aws_route_table" "kube-routetable" {
+  vpc_id = aws_vpc.kube-vpc.id
+  route {
+      cidr_block = "0.0.0.0/0"
+      gateway_id = aws_internet_gateway.kube-igw.id
+  }
+  tags = {
+     Name = "${var.prefix}-routetable"
+  }
+}
+
+# associando subnets na route table
+resource "aws_route_table_association" "kube-routetable-association" {
+  count = 2
+  route_table_id = aws_route_table.kube-routetable.id
+  subnet_id = aws_subnet.subnets.*.id[count.index]
+}
+
+- criando Security Group
+* detalhes no arquivo "cluster.tf"
+
+- criando roles e policies
+* detalhes no arquivo "cluster.tf"
+
+- criando logs e eks cluster
+* detalhes no arquivo "cluster.tf"
+
+- criando os nodes
+* detalhes no arquivo "nodes.tf"
+
+OBS: parei no criando kubeconfig
+
+$ terraform destroy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
