@@ -186,28 +186,7 @@ $ kubectl port-forward pod/NOME_POD 8181:80
 - destuindo todos os recursos 
 $ terraform destroy
 
+##### terraform com módulos ######
+- criando vpc com module 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+* detalhes sobre os módulos nos arquivos da pasta "aws-cluster-modules"
