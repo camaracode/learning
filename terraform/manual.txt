@@ -148,8 +148,42 @@ resource "aws_route_table_association" "kube-routetable-association" {
 - criando os nodes
 * detalhes no arquivo "nodes.tf"
 
-OBS: parei no criando kubeconfig
+- criando kubeconfig
+* detalhe no arquivo "outputs.tf"
 
+- instalar "aws-iam-authenticator"
+* esse objeto adiciona uma camada extra pra acesso ao cluster
+
+* tutorial: https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html
+
+1- Download the Amazon EKS vended aws-iam-authenticator binary from Amazon S3. To download the Arm version, change amd64 to arm64 before running the command.
+$ curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator
+
+2- Apply execute permissions to the binary.
+$ chmod +x ./aws-iam-authenticator
+
+3- Copy the binary to a folder with contains your user binaries. In my case the path "/usr/local/bin" is already defined in $PATH. 
+$ sudo cp ./aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
+
+4- Test that the aws-iam-authenticator binary works.
+$ aws-iam-authenticator help
+
+5- (Optional) Remove the aws-iam-authenticator binary from the original folder where you downloaded the file
+$ rm -rf aws-iam-authenticator
+
+- copiar o arquivo kubeconfig para pasta padrão e conseguir acesso ao cluster na aws 
+$ cp kubeconfig ~/.kube//config
+
+* testando: $ kubectl get nodes.. deverá obter os nodes criados no cluster da aws 
+
+- criando um deployment e destruir o cluster e todos os recursos
+$ kubectl create deploy nginx --image=nginx 
+$ kubectl get pods 
+
+* simulando acessado ao pod localmente
+$ kubectl port-forward pod/NOME_POD 8181:80
+
+- destuindo todos os recursos 
 $ terraform destroy
 
 
