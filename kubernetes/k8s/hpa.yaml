@@ -8,5 +8,5 @@ spec:
     kind: Deployment
     name: webapp
   minReplicas: 1
-  maxReplicas: 30
-  targetCPUUtilizationPercentage: 25
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 40

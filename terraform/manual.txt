@@ -1,0 +1,213 @@
+##### intalação do terraform #####
+* recomenda-se utilizar o package manager do sistema operacional
+
+$ curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+$ sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+$ sudo apt-get update && sudo apt-get install terraform
+
+- criando primeiro arquivo de configuração do terraform
+
+* provider local
+https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file
+
+EX:
+...
+# resource = bloco
+# local = provider
+# file = tipo do provider
+# exemplo = nome do recurdo
+resource "local_file" "exemplo" {  
+}
+
+* iniciando terraform
+$ terraform init
+
+* criar um plano
+$ terraform plan
+
+* executar o plano
+$ terraform apply
+
+- variável
+OBS: assistir aula depois novamente
+
+- outputs
+OBS: assistir aula depois novamente
+
+- data sources
+OBS: assistir aula depois novamente
+
+
+########### Criando cluster kubernetes ###########
+https://github.com/codeedu/fc2-terraform
+
+- conceitos aws
+VPC -> Subnets
+    Subnets podem ser separados por zonas de disponibilidade
+    Route Table -> especifica os roteamentos das subnets 
+    Security Group -> firewall (ingress - egress)
+
+Somente após essas configurações que começamos a criar as máquinas
+
+- criar novo usuário na aws - admin
+* credenciais enviadas por email
+
+- instalando o aws cli
+$ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+$ unzip awscliv2.zip
+$ sudo ./aws/install
+
+obs: a symbolic link is created in /usr/local/bin
+
+- configurando aws cli
+$ aws configure
+
+- local do arquivo de configuração
+$ cat ~/.aws/config
+
+- criando vpc com terraform
+* ver arquivo "aws-cluster/providers.tf"
+
+$ terraform init 
+
+- criando vpc
+ex:
+resource "aws_vpc" "kube-vpc" {    
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "kube-vpc"
+  }
+}
+
+$ terraform plan 
+$ terraform apply
+
+- criando subnets
+Ex: 
+resource "aws_subnet" "kube-subnet-1" {
+  availability_zone = "us-east-1a"
+  vpc_id = aws_vpc.kube-vpc.id
+  cidr_block = "10.0.0.0/24"
+  tags = {
+    Name = "kube-subnet-1"
+  }  
+}
+
+* executar com auto aprovação
+$ terraform apply --auto-approve
+
+* refatorando a criação de subnets
+EX:
+resource "aws_subnet" "subnets" {
+  count = 2
+  availability_zone = data.aws_availability_zones.azs.names[count.index]
+  vpc_id = aws_vpc.kube-vpc.id
+  cidr_block = "10.0.${count.index}.0/24"
+  map_public_ip_on_launch = true # habilitando criação de ip publico para subnet
+  tags = {
+    Name = "${var.prefix}-subnet-${count.index + 1}"
+  }  
+}
+
+- criando gateway e route table
+Ex:
+resource "aws_internet_gateway" "kube-igw" {
+  vpc_id = aws_vpc.kube-vpc.id
+  tags = {
+      Name = "${var.prefix}-igw"
+  }
+}
+
+resource "aws_route_table" "kube-routetable" {
+  vpc_id = aws_vpc.kube-vpc.id
+  route {
+      cidr_block = "0.0.0.0/0"
+      gateway_id = aws_internet_gateway.kube-igw.id
+  }
+  tags = {
+     Name = "${var.prefix}-routetable"
+  }
+}
+
+# associando subnets na route table
+resource "aws_route_table_association" "kube-routetable-association" {
+  count = 2
+  route_table_id = aws_route_table.kube-routetable.id
+  subnet_id = aws_subnet.subnets.*.id[count.index]
+}
+
+- criando Security Group
+* detalhes no arquivo "cluster.tf"
+
+- criando roles e policies
+* detalhes no arquivo "cluster.tf"
+
+- criando logs e eks cluster
+* detalhes no arquivo "cluster.tf"
+
+- criando os nodes
+* detalhes no arquivo "nodes.tf"
+
+- criando kubeconfig
+* detalhe no arquivo "outputs.tf"
+
+- instalar "aws-iam-authenticator"
+* esse objeto adiciona uma camada extra pra acesso ao cluster
+
+* tutorial: https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html
+
+1- Download the Amazon EKS vended aws-iam-authenticator binary from Amazon S3. To download the Arm version, change amd64 to arm64 before running the command.
+$ curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator
+
+2- Apply execute permissions to the binary.
+$ chmod +x ./aws-iam-authenticator
+
+3- Copy the binary to a folder with contains your user binaries. In my case the path "/usr/local/bin" is already defined in $PATH. 
+$ sudo cp ./aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
+
+4- Test that the aws-iam-authenticator binary works.
+$ aws-iam-authenticator help
+
+5- (Optional) Remove the aws-iam-authenticator binary from the original folder where you downloaded the file
+$ rm -rf aws-iam-authenticator
+
+- copiar o arquivo kubeconfig para pasta padrão e conseguir acesso ao cluster na aws 
+$ cp kubeconfig ~/.kube//config
+
+* testando: $ kubectl get nodes.. deverá obter os nodes criados no cluster da aws 
+
+- criando um deployment e destruir o cluster e todos os recursos
+$ kubectl create deploy nginx --image=nginx 
+$ kubectl get pods 
+
+* simulando acessado ao pod localmente
+$ kubectl port-forward pod/NOME_POD 8181:80
+
+- destuindo todos os recursos 
+$ terraform destroy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
