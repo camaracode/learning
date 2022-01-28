@@ -1,0 +1,19 @@
+---
+- hosts: all
+  remote_user: ubuntu
+  become: true  # após logar como ubuntu, passa a ser o root
+
+  tasks:
+    - name: Install nginx
+      apt: 
+        name: nginx
+        state: present
+        update_cache: yes 
+
+    - name: Init nginx 
+      service: 
+        name: nginx
+        state: started
+
+    
+
