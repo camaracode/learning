@@ -1,0 +1,4 @@
+- hosts: all
+  become: yes  # após logar como ubuntu, passa a ser o root
+  roles: 
+    - install_nginx
