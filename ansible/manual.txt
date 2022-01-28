@@ -1,0 +1,90 @@
+*************** Installing Ansible on Ubuntu ***************
+
+https://docs.ansible.com/ansible-core/devel/index.html
+
+$ sudo apt update
+$ sudo apt install software-properties-common
+$ sudo add-apt-repository --yes --update ppa:ansible/ansible
+$ sudo apt install ansible
+
+- Configurando Ubuntu com Ansible e Docker
+obs: detalhes nos arquivos dentro da pasta "starting"
+
+- Configurando nodes e configurando chaves
+*** necessário criar uma chave no "control"
+$ ssh-keygen
+
+*** copiar chave para "node1"
+$ ssh-copy-id root@node1
+
+* após esse passo, não será mais necessário informar a senha para acessar a outra máquina "node1"
+$ ssh root@node1   -> para testar
+$ cat /root/.ssh/authorized_keys   -> conferindo a chave de autorização
+
+- executando ping para o host node1 definido no arquivo "hosts"
+$ ansible -i hosts all -m ping
+
+- executando outro comando: quanto tempo a máquina está ligada
+$ ansible -i hosts all -m shell -a 'uptime'
+
+OBS: nas máquinas "nodes", não é obrigado ter o ansible instalado
+
+***** Trabalhando com playbooks ************
+- criar EC2 na AWS
+
+- pingando na AWS
+1- copiar os ips das máquina para o arquivo hosts dentro da pasta "playbooks"
+2- dar permissão somente de leitura para chave da aws 
+    $ chmod 400 ansible.pem
+3- configurar ansible para utilizar essa chave na hora de fazer login
+* configuração no arquivo de hosts
+
+- iniciando com playbooks (lista de comandos)
+* para executar um playbooks
+$ ansible-playbook -i hosts NOME_ARQUIVO.yaml
+
+- ansible galaxy
+* cria uma estrutura de pastas para organização das roles
+ex.:
+$ ansible-galaxy init install_nginx
+
+* executando o playbook a partir da roles
+$ ansible-playbook -i ../hosts main.yaml
+
+* exemplo instalando docker nas instâncias
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
